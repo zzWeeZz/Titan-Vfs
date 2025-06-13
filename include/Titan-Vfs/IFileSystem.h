@@ -6,13 +6,12 @@
 namespace Titan::Vfs
 {
 
-using IFileSystemPtr = eastl::shared_ptr<class IFileSystem>;
-using IFileSystemWeakPtr = eastl::weak_ptr<class IFileSystem>;
+using HFileSystem = eastl::shared_ptr<class IFileSystem>;
 
 class IFileSystem
 {
 public:
-    typedef eastl::unordered_map<eastl::string, IFilePtr> TFileList;
+    typedef eastl::unordered_map<eastl::string, HFile> TFileList;
     
 public:
     IFileSystem() = default;
@@ -50,12 +49,12 @@ public:
     /*
      * Open existing file for reading, if not exists return null
      */
-    virtual IFilePtr OpenFile(const FileInfo& filePath, IFile::FileMode mode) = 0;
+    virtual HFile OpenFile(const FileInfo& filePath, IFile::FileMode mode) = 0;
     
     /*
      * Close file
      */
-    virtual void CloseFile(IFilePtr file) = 0;
+    virtual void CloseFile(HFile file) = 0;
 
     /*
      * Create file on writeable filesystem. Return true if file already exists
@@ -95,7 +94,7 @@ public:
 protected:
     inline bool IsFile(const FileInfo& filePath, const TFileList& fileList) const
     {
-        IFilePtr file = FindFile(filePath, fileList);
+        HFile file = FindFile(filePath, fileList);
         if (file) {
             return !file->GetFileInfo().IsDir();
         }
@@ -104,14 +103,14 @@ protected:
     
     inline bool IsDir(const FileInfo& dirPath, const TFileList& fileList) const
     {
-        IFilePtr file = FindFile(dirPath, fileList);
+        HFile file = FindFile(dirPath, fileList);
         if (file) {
             return file->GetFileInfo().IsDir();
         }
         return false;
     }
 
-    IFilePtr FindFile(const FileInfo& fileInfo, const TFileList& fileList) const
+    HFile FindFile(const FileInfo& fileInfo, const TFileList& fileList) const
     {
         auto it = fileList.find(fileInfo.AbsolutePath());
         if (it == fileList.end()) {

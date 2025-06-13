@@ -11,21 +11,24 @@ namespace fs = std::filesystem;
 namespace Titan::Vfs
 {
 
-using NativeFileSystemPtr = std::shared_ptr<class NativeFileSystem>;
-using NativeFileSystemWeakPtr = std::weak_ptr<class NativeFileSystem>;
+using HNativeFileSystem = std::shared_ptr<class NativeFileSystem>;
 
 class NativeFileSystem final : public IFileSystem
 {
-public:
     NativeFileSystem(const eastl::string& basePath)
-        : m_BasePath(basePath)
-        , m_IsInitialized(false)
+       : m_BasePath(basePath)
+       , m_IsInitialized(false)
     {
     }
-
+public:
     ~NativeFileSystem()
     {
         Shutdown();
+    }
+
+    static HFileSystem Create(const eastl::string& basePath)
+    {
+        return HFileSystem(new NativeFileSystem(basePath));
     }
     
     /*
@@ -110,7 +113,7 @@ public:
      * Open existing file for reading, if not exists returns null for readonly filesystem. 
      * If file not exists and filesystem is writable then create new file
      */
-    virtual IFilePtr OpenFile(const FileInfo& filePath, IFile::FileMode mode) override
+    virtual HFile OpenFile(const FileInfo& filePath, IFile::FileMode mode) override
     {
         if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
@@ -123,7 +126,7 @@ public:
     /*
      * Close file
      */
-    virtual void CloseFile(IFilePtr file) override
+    virtual void CloseFile(HFile file) override
     {
         if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
@@ -275,7 +278,7 @@ private:
         return (perms & fs::perms::owner_write) == fs::perms::none;
     }
     
-    inline IFilePtr OpenFileST(const FileInfo& filePath, IFile::FileMode mode)
+    inline HFile OpenFileST(const FileInfo& filePath, IFile::FileMode mode)
     {
         // check if filesystem is readonly and mode is write then return null
         bool requestWrite = ((mode & IFile::FileMode::Write) == IFile::FileMode::Write);
@@ -286,7 +289,7 @@ private:
             return nullptr;
         }
 
-        IFilePtr file = FindFile(filePath, m_FileList);
+        HFile file = FindFile(filePath, m_FileList);
         bool isExists = (file != nullptr);
         if (!isExists && !IsReadOnlyST()) {
             mode = mode | IFile::FileMode::Truncate;
@@ -304,7 +307,7 @@ private:
         return file;
     }
 
-    inline void CloseFileST(IFilePtr file)
+    inline void CloseFileST(HFile file)
     {
         if (file) {
             file->Close();
@@ -313,7 +316,7 @@ private:
     
     inline bool CreateFileST(const FileInfo& filePath)
     {
-        IFilePtr file = OpenFileST(filePath, IFile::FileMode::Write | IFile::FileMode::Truncate);
+        HFile file = OpenFileST(filePath, IFile::FileMode::Write | IFile::FileMode::Truncate);
         if (file) {
             file->Close();
             return true;
@@ -372,7 +375,7 @@ private:
                 BuildFilelist(entry.path().string().c_str(), outFileList);
             } else if (fs::is_regular_file(entry.status())) {
                 FileInfo fileInfo(basePath, filename.c_str(), false);
-                IFilePtr file(new NativeFile(fileInfo));
+                HFile file(new NativeFile(fileInfo));
                 outFileList[fileInfo.AbsolutePath()] = file;
             }
         }

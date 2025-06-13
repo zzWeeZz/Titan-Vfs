@@ -6,8 +6,7 @@
 namespace Titan::Vfs
 {
 
-using NativeFilePtr = std::shared_ptr<class NativeFile>;
-using NativeFileWeakPtr = std::weak_ptr<class NativeFile>;
+using HNativeFile = std::shared_ptr<class NativeFile>;
 
 class NativeFile final : public IFile
 {

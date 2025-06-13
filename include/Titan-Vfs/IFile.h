@@ -7,8 +7,7 @@
 namespace Titan::Vfs
 {
     
-using IFilePtr = eastl::shared_ptr<class IFile>;
-using IFileWeakPtr = eastl::weak_ptr<class IFile>;
+using HFile = eastl::shared_ptr<class IFile>;
 
 class IFile
 {
@@ -127,7 +126,7 @@ public:
     virtual uint64_t Write(std::istream& stream, uint64_t size, uint64_t bufferSize = 1024) = 0;
 };
     
-inline bool operator==(IFilePtr f1, IFilePtr f2)
+inline bool operator==(HFile f1, HFile f2)
 {
     if (!f1 || !f2) {
         return false;

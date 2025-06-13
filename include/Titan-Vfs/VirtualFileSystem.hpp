@@ -8,20 +8,19 @@
 namespace Titan::Vfs
 {
 
-using VirtualFileSystemPtr = std::shared_ptr<class VirtualFileSystem>;
-using VirtualFileSystemWeakPtr = std::weak_ptr<class VirtualFileSystem>;
+using HVirtualFileSystem = std::shared_ptr<class VirtualFileSystem>;
     
-
 class VirtualFileSystem final
 {
 public:
-    typedef eastl::list<IFileSystemPtr> TFileSystemList;
+    typedef eastl::list<HFileSystem> TFileSystemList;
     typedef eastl::unordered_map<eastl::string, TFileSystemList> TFileSystemMap;
-    
-public:
+
+private:
     VirtualFileSystem()
     {
     }
+public:
 
     ~VirtualFileSystem()
     {
@@ -31,6 +30,11 @@ public:
             }
         }
     }
+
+    static HVirtualFileSystem Create()
+    {
+        return HVirtualFileSystem(new VirtualFileSystem());
+    }
     
     /*
      * Register new filesystem. Alias is a base prefix to file access.
@@ -38,7 +42,7 @@ public:
      * with alias '/', so it possible to access files with path '/filename'
      * instead of '/home/media/filename
      */
-    void AddFileSystem(eastl::string alias, IFileSystemPtr filesystem)
+    void AddFileSystem(eastl::string alias, HFileSystem filesystem)
     {
         if (!filesystem) {
             return;
@@ -69,7 +73,7 @@ public:
     /*
      * Remove registered filesystem
      */
-    void RemoveFileSystem(eastl::string alias, IFileSystemPtr filesystem)
+    void RemoveFileSystem(eastl::string alias, HFileSystem filesystem)
     {
         if (!StringUtils::EndsWith(alias, "/")) {
             alias += "/";
@@ -97,7 +101,7 @@ public:
     /*
      * Check if filesystem with 'alias' added
      */
-    bool HasFileSystem(eastl::string alias, IFileSystemPtr fileSystem) const
+    bool HasFileSystem(eastl::string alias, HFileSystem fileSystem) const
     {
         if (!StringUtils::EndsWith(alias, "/")) {
             alias += "/";
@@ -174,9 +178,9 @@ public:
     /*
      * Iterate over all registered filesystems and find first ocurrences of file
      */
-    IFilePtr OpenFile(const FileInfo& filePath, IFile::FileMode mode)
+    HFile OpenFile(const FileInfo& filePath, IFile::FileMode mode)
     {
-        eastl::function<IFilePtr()> fn = [&]() -> IFilePtr {
+        eastl::function<HFile()> fn = [&]() -> HFile {
             for (const eastl::string& alias : m_SortedAlias) {
                 if (!StringUtils::StartsWith(filePath.AbsolutePath(), alias)) {
                     continue;
@@ -193,14 +197,14 @@ public:
                 
                 for (auto it = filesystems.rbegin(); it != filesystems.rend(); ++it) {
                     // Is it last filesystem
-                    IFileSystemPtr fs = *it;
+                    HFileSystem fs = *it;
                     bool isMain = (fs == filesystems.front());
 
                     // If file exists in filesystem we try to open it. 
                     // In case file not exists and we are in first filesystem we try to create new file if mode allows it
                     FileInfo realPath(fs->BasePath(), relativePath, false);
                     if (fs->IsFileExists(realPath) || isMain) {
-                        IFilePtr file = fs->OpenFile(realPath, mode);
+                        HFile file = fs->OpenFile(realPath, mode);
                         if (file) {
                             return file;
                         }
@@ -239,7 +243,7 @@ public:
 
                 for (auto it = filesystems.rbegin(); it != filesystems.rend(); ++it) {
                     // Is it last filesystem
-                    IFileSystemPtr fs = *it;
+                    HFileSystem fs = *it;
                     bool isMain = (fs == filesystems.front());
 
                     // If file exists in filesystem we try to open it. 

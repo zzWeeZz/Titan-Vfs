@@ -11,21 +11,24 @@ namespace fs = std::filesystem;
 namespace Titan::Vfs
 {
 
-using MemoryFileSystemPtr = eastl::shared_ptr<class MemoryFileSystem>;
-using MemoryFileSystemWeakPtr = eastl::weak_ptr<class MemoryFileSystem>;
+using HMemoryFileSystem = eastl::shared_ptr<class MemoryFileSystem>;
 
 
 class MemoryFileSystem final : public IFileSystem
 {
-public:
     MemoryFileSystem()
         : m_IsInitialized(false)
     {
     }
-
+public:
     ~MemoryFileSystem()
     {
         Shutdown();
+    }
+
+    static HFileSystem Create()
+    {
+        return HFileSystem(new MemoryFileSystem());
     }
     
     /*
@@ -119,7 +122,7 @@ public:
      * Open existing file for reading, if not exists returns null for readonly filesystem. 
      * If file not exists and filesystem is writable then create new file
      */
-    virtual IFilePtr OpenFile(const FileInfo& filePath, IFile::FileMode mode) override
+    virtual HFile OpenFile(const FileInfo& filePath, IFile::FileMode mode) override
     {
         if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
@@ -132,7 +135,7 @@ public:
     /*
      * Close file
      */
-    virtual void CloseFile(IFilePtr file) override
+    virtual void CloseFile(HFile file) override
     {
         if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
@@ -273,9 +276,9 @@ private:
         return false;
     }
 
-    inline IFilePtr OpenFileST(const FileInfo& filePath, IFile::FileMode mode)
+    inline HFile OpenFileST(const FileInfo& filePath, IFile::FileMode mode)
     {
-        IFilePtr file = FindFile(filePath, m_FileList);
+        HFile file = FindFile(filePath, m_FileList);
         bool isExists = (file != nullptr);
         if (!isExists && !IsReadOnlyST()) {
             file.reset(new MemoryFile(filePath));
@@ -292,7 +295,7 @@ private:
         return file;
     }
 
-    inline void CloseFileST(IFilePtr file)
+    inline void CloseFileST(HFile file)
     {
         if (!file) {
             return;
@@ -304,7 +307,7 @@ private:
 
     inline bool CreateFileST(const FileInfo& filePath)
     {
-        IFilePtr file = OpenFileST(filePath, IFile::FileMode::Write | IFile::FileMode::Truncate);
+        HFile file = OpenFileST(filePath, IFile::FileMode::Write | IFile::FileMode::Truncate);
         if (file) {
             file->Close();
             return true;

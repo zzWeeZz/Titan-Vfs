@@ -12,23 +12,26 @@ namespace fs = std::filesystem;
 namespace Titan::Vfs
 {
 
-using ZipFileSystemPtr = eastl::shared_ptr<class ZipFileSystem>;
-using ZipFileSystemWeakPtr = eastl::weak_ptr<class ZipFileSystem>;
-
+using HZipFileSystem = eastl::shared_ptr<class ZipFileSystem>;
 
 class ZipFileSystem final : public IFileSystem
 {
-public:
     ZipFileSystem(const eastl::string& zipPath)
-        : m_ZipPath(zipPath)
-        , m_ZipArchive(nullptr)
-        , m_IsInitialized(false)
+       : m_ZipPath(zipPath)
+       , m_ZipArchive(nullptr)
+       , m_IsInitialized(false)
     {
     }
-
+public:
     ~ZipFileSystem()
     {
         Shutdown();
+    }
+
+
+    static HFileSystem Create(const eastl::string& zipPath)
+    {
+        return HFileSystem(new ZipFileSystem(zipPath));
     }
     
     /*
@@ -103,7 +106,7 @@ public:
      * Open existing file for reading, if not exists returns null for readonly filesystem. 
      * If file not exists and filesystem is writable then create new file
      */
-    virtual IFilePtr OpenFile(const FileInfo& filePath, IFile::FileMode mode) override
+    virtual HFile OpenFile(const FileInfo& filePath, IFile::FileMode mode) override
     {
         if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
@@ -147,7 +150,7 @@ public:
     /*
     * Close file 
     */
-    virtual void CloseFile(IFilePtr file) override
+    virtual void CloseFile(HFile file) override
     {
         //NO-OP
     }
@@ -246,7 +249,7 @@ private:
         return m_FileList;
     }
     
-    inline IFilePtr OpenFileST(const FileInfo& filePath, IFile::FileMode mode)
+    inline HFile OpenFileST(const FileInfo& filePath, IFile::FileMode mode)
     {
         // check if filesystem is readonly and mode is write then return null
         bool requestWrite = ((mode & IFile::FileMode::Write) == IFile::FileMode::Write);
@@ -258,7 +261,7 @@ private:
             return nullptr;
         }
 
-        IFilePtr file = FindFile(filePath, m_FileList);
+        HFile file = FindFile(filePath, m_FileList);
         if (file) {
             file->Open(mode);
         }
@@ -281,7 +284,7 @@ private:
             }
             
             FileInfo fileInfo(BasePathST(), file_stat.m_filename, false);
-            IFilePtr file(new ZipFile(fileInfo, file_stat.m_file_index, file_stat.m_uncomp_size, zipArchive));
+            HFile file(new ZipFile(fileInfo, file_stat.m_file_index, file_stat.m_uncomp_size, zipArchive));
             outFileList[fileInfo.AbsolutePath()] = file;
         }
     }

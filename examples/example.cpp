@@ -10,7 +10,7 @@ void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, cons
     return malloc(size);
 }
 
-void PrintFile(const eastl::string& msg, Vfs::IFilePtr file)
+void PrintFile(const eastl::string& msg, Vfs::HFile file)
 {
     if (file && file->IsOpened()) {
         char data[256];
@@ -23,10 +23,10 @@ void PrintFile(const eastl::string& msg, Vfs::IFilePtr file)
 
 int main()
 {
-	Vfs::VirtualFileSystemPtr vfs(new Vfs::VirtualFileSystem());
-    Vfs::IFileSystemPtr rootFS(new Vfs::NativeFileSystem("../test-data/files"));
-    Vfs::IFileSystemPtr memFS(new Vfs::MemoryFileSystem());
-    Vfs::IFileSystemPtr zipFS(new Vfs::ZipFileSystem("../test-data/test.zip"));
+	const Vfs::HVirtualFileSystem vfs = Vfs::VirtualFileSystem::Create();
+    const Vfs::HFileSystem rootFS = Vfs::NativeFileSystem::Create("../test-data/files");
+    const Vfs::HFileSystem memFS = Vfs::MemoryFileSystem::Create();
+    const Vfs::HFileSystem zipFS = Vfs::ZipFileSystem::Create("../test-data/test.zip");
 
     rootFS->Initialize();
     memFS->Initialize();
@@ -39,28 +39,28 @@ int main()
     printf("Native filesystem test:\n");
 
 	auto test = vfs->AbsolutePath("/test.txt");
-    Vfs::IFilePtr file = vfs->OpenFile(Vfs::FileInfo("/test.txt"), Vfs::IFile::FileMode::ReadWrite);
+    Vfs::HFile file = vfs->OpenFile(Vfs::FileInfo("/test.txt"), Vfs::IFile::FileMode::ReadWrite);
     if (file && file->IsOpened()) {
         char data[] = "The quick brown fox jumps over the lazy dog\n";
         file->Write(reinterpret_cast<uint8_t*>(data), sizeof(data));
         file->Close();
     }
 
-    Vfs::IFilePtr file2 = vfs->OpenFile(Vfs::FileInfo("/test.txt"), Vfs::IFile::FileMode::Read);
+    Vfs::HFile file2 = vfs->OpenFile(Vfs::FileInfo("/test.txt"), Vfs::IFile::FileMode::Read);
     if (file2 && file2->IsOpened()) {
         PrintFile("File /test.txt:", file2);
     }
 
     printf("Memory filesystem test:\n");
 
-    Vfs::IFilePtr memFile = vfs->OpenFile(Vfs::FileInfo("/memory/file.txt"), Vfs::IFile::FileMode::ReadWrite);
+    Vfs::HFile memFile = vfs->OpenFile(Vfs::FileInfo("/memory/file.txt"), Vfs::IFile::FileMode::ReadWrite);
     if (memFile && memFile->IsOpened()) {
         char data[] = "The quick brown fox jumps over the lazy dog\n";
 	    memFile->Write(reinterpret_cast<uint8_t*>(data), sizeof(data));
 	    memFile->Close();
     }
     
-    Vfs::IFilePtr memFile2 = vfs->OpenFile(Vfs::FileInfo("/memory/file.txt"), Vfs::IFile::FileMode::Read);
+    Vfs::HFile memFile2 = vfs->OpenFile(Vfs::FileInfo("/memory/file.txt"), Vfs::IFile::FileMode::Read);
     if (memFile2 && memFile2->IsOpened()) {
         PrintFile("File /memory/file.txt:", memFile2);
     }
@@ -72,22 +72,22 @@ int main()
 		printf("Zip file entry: %s\n", file.first.c_str());
 	}
 
-    Vfs::IFilePtr zipFile = vfs->OpenFile(Vfs::FileInfo("/zip/file.txt"), Vfs::IFile::FileMode::Read);
+    Vfs::HFile zipFile = vfs->OpenFile(Vfs::FileInfo("/zip/file.txt"), Vfs::IFile::FileMode::Read);
     if (zipFile && zipFile->IsOpened()) {
         PrintFile("File /zip/file.txt:", zipFile);
     }
 
     printf("DLC filesystem test:\n");
     
-    Vfs::IFileSystemPtr dlc1FS(new Vfs::NativeFileSystem("../test-data/dlc1"));
-    Vfs::IFileSystemPtr dlc2FS(new Vfs::NativeFileSystem("../test-data/dlc2"));
+    Vfs::HFileSystem dlc1FS = Vfs::NativeFileSystem::Create("../test-data/dlc1");
+    Vfs::HFileSystem dlc2FS = Vfs::NativeFileSystem::Create("../test-data/dlc2");
 
     dlc1FS->Initialize();
     dlc2FS->Initialize();
 
     vfs->AddFileSystem("/dlc", dlc1FS);
        
-    Vfs::IFilePtr dlcFile = vfs->OpenFile(Vfs::FileInfo("/dlc/file.txt"), Vfs::IFile::FileMode::Read);
+    Vfs::HFile dlcFile = vfs->OpenFile(Vfs::FileInfo("/dlc/file.txt"), Vfs::IFile::FileMode::Read);
     if (dlcFile && dlcFile->IsOpened()) {
         PrintFile("File /dlc/file.txt that exists in dlc1:", dlcFile);
         dlcFile->Close();
@@ -101,13 +101,13 @@ int main()
         dlcFile->Close();
     }
 
-    Vfs::IFilePtr dlcFile1 = vfs->OpenFile(Vfs::FileInfo("/dlc/file1.txt"), Vfs::IFile::FileMode::Read);
+    Vfs::HFile dlcFile1 = vfs->OpenFile(Vfs::FileInfo("/dlc/file1.txt"), Vfs::IFile::FileMode::Read);
     if (dlcFile1 && dlcFile1->IsOpened()) {
         PrintFile("File /dlc/file1.txt that exists only in dlc1:", dlcFile1);
         dlcFile1->Close();
     }
 
-    Vfs::IFilePtr dlcFile2 = vfs->OpenFile(Vfs::FileInfo("/dlc/file2.txt"), Vfs::IFile::FileMode::Read);
+    Vfs::HFile dlcFile2 = vfs->OpenFile(Vfs::FileInfo("/dlc/file2.txt"), Vfs::IFile::FileMode::Read);
     if (dlcFile2 && dlcFile2->IsOpened()) {
         PrintFile("File /dlc/file2.txt that exists only in dlc2:", dlcFile2);
         dlcFile2->Close();

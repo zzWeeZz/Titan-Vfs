@@ -7,9 +7,7 @@
 namespace Titan::Vfs
 {
 
-using ZipFilePtr = eastl::shared_ptr<class ZipFile>;
-using ZipFileWeakPtr = eastl::weak_ptr<class ZipFile>;
-
+using HZipFile = eastl::shared_ptr<class ZipFile>;
 
 class ZipFile final : public IFile
 {
