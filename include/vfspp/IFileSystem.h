@@ -3,16 +3,16 @@
 
 #include "IFile.h"
 
-namespace vfspp
+namespace Titan::Vfs
 {
 
-using IFileSystemPtr = std::shared_ptr<class IFileSystem>;
-using IFileSystemWeakPtr = std::weak_ptr<class IFileSystem>;
+using IFileSystemPtr = eastl::shared_ptr<class IFileSystem>;
+using IFileSystemWeakPtr = eastl::weak_ptr<class IFileSystem>;
 
 class IFileSystem
 {
 public:
-    typedef std::unordered_map<std::string, IFilePtr> TFileList;
+    typedef eastl::unordered_map<eastl::string, IFilePtr> TFileList;
     
 public:
     IFileSystem() = default;
@@ -35,7 +35,7 @@ public:
     /*
      * Get base path
      */
-    virtual const std::string& BasePath() const = 0;
+    virtual const eastl::string& BasePath() const = 0;
     
     /*
      * Retrieve file list according filter

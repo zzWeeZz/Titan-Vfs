@@ -9,17 +9,17 @@
 
 namespace fs = std::filesystem;
 
-namespace vfspp
+namespace Titan::Vfs
 {
 
-using ZipFileSystemPtr = std::shared_ptr<class ZipFileSystem>;
-using ZipFileSystemWeakPtr = std::weak_ptr<class ZipFileSystem>;
+using ZipFileSystemPtr = eastl::shared_ptr<class ZipFileSystem>;
+using ZipFileSystemWeakPtr = eastl::weak_ptr<class ZipFileSystem>;
 
 
 class ZipFileSystem final : public IFileSystem
 {
 public:
-    ZipFileSystem(const std::string& zipPath)
+    ZipFileSystem(const eastl::string& zipPath)
         : m_ZipPath(zipPath)
         , m_ZipArchive(nullptr)
         , m_IsInitialized(false)
@@ -36,7 +36,7 @@ public:
      */
     virtual void Initialize() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             InitializeST();
         } else {
@@ -49,7 +49,7 @@ public:
      */
     virtual void Shutdown() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             ShutdownST();
         } else {
@@ -68,9 +68,9 @@ public:
     /*
      * Get base path
      */
-    virtual const std::string& BasePath() const override
+    virtual const eastl::string& BasePath() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return BasePathST();
         } else {
@@ -83,7 +83,7 @@ public:
      */
     virtual const TFileList& FileList() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return FileListST();
         } else {
@@ -105,7 +105,7 @@ public:
      */
     virtual IFilePtr OpenFile(const FileInfo& filePath, IFile::FileMode mode) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return OpenFileST(filePath, mode);
         } else {
@@ -156,7 +156,7 @@ public:
      */
     virtual bool IsFileExists(const FileInfo& filePath) const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsFileExistsST(filePath);
         } else {
@@ -169,7 +169,7 @@ public:
      */
     virtual bool IsFile(const FileInfo& filePath) const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IFileSystem::IsFile(filePath, m_FileList);
         } else {
@@ -182,7 +182,7 @@ public:
      */
     virtual bool IsDir(const FileInfo& dirPath) const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IFileSystem::IsDir(dirPath, m_FileList);
         } else {
@@ -197,11 +197,11 @@ private:
             return;
         }
 
-        if (!fs::is_regular_file(m_ZipPath)) {
+        if (!fs::is_regular_file(m_ZipPath.c_str())) {
             return;
         }
 
-        m_ZipArchive = std::make_shared<mz_zip_archive>();
+        m_ZipArchive = eastl::make_shared<mz_zip_archive>();
 
         mz_bool status = mz_zip_reader_init_file(m_ZipArchive.get(), m_ZipPath.c_str(), 0);
         if (!status) {
@@ -235,9 +235,9 @@ private:
         return m_IsInitialized;
     }
 
-    inline const std::string& BasePathST() const
+    inline const eastl::string& BasePathST() const
     {
-        static std::string rootPath = "/";
+        static eastl::string rootPath = "/";
         return rootPath;
     }
 
@@ -271,7 +271,7 @@ private:
         return FindFile(filePath, m_FileList) != nullptr;
     }
 
-    void BuildFilelist(std::shared_ptr<mz_zip_archive> zipArchive, TFileList& outFileList)
+    void BuildFilelist(eastl::shared_ptr<mz_zip_archive> zipArchive, TFileList& outFileList)
     {
         for (mz_uint i = 0; i < mz_zip_reader_get_num_files(zipArchive.get()); i++) {
             mz_zip_archive_file_stat file_stat;
@@ -287,8 +287,8 @@ private:
     }
     
 private:
-    std::string m_ZipPath;
-    std::shared_ptr<mz_zip_archive> m_ZipArchive;
+    eastl::string m_ZipPath;
+    eastl::shared_ptr<mz_zip_archive> m_ZipArchive;
     bool m_IsInitialized;
     TFileList m_FileList;
     mutable std::mutex m_Mutex;

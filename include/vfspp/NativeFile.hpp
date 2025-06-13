@@ -3,7 +3,7 @@
 
 #include "IFile.h"
 
-namespace vfspp
+namespace Titan::Vfs
 {
 
 using NativeFilePtr = std::shared_ptr<class NativeFile>;
@@ -21,7 +21,7 @@ public:
     
     NativeFile(const FileInfo& fileInfo, std::fstream&& stream)
         : m_FileInfo(fileInfo)
-        , m_Stream(std::move(stream))
+        , m_Stream(eastl::move(stream))
         , m_IsReadOnly(true)
         , m_Mode(FileMode::Read)
     {
@@ -37,7 +37,7 @@ public:
      */
     virtual const FileInfo& GetFileInfo() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return GetFileInfoST();
         } else {
@@ -50,7 +50,8 @@ public:
      */
     virtual uint64_t Size() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled)
+        {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return SizeST();
         } else {
@@ -63,10 +64,13 @@ public:
      */
     virtual bool IsReadOnly() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled)
+        {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsReadOnlyST();
-        } else {
+        }
+        else
+        {
             return IsReadOnlyST();
         }
     }
@@ -76,7 +80,7 @@ public:
      */
     virtual void Open(FileMode mode) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             OpenST(mode);
         } else {
@@ -89,7 +93,7 @@ public:
      */
     virtual void Close() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             CloseST();
         } else {
@@ -102,7 +106,7 @@ public:
      */
     virtual bool IsOpened() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsOpenedST();
         } else {
@@ -115,7 +119,7 @@ public:
      */
     virtual uint64_t Seek(uint64_t offset, Origin origin) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return SeekST(offset, origin);
         } else {
@@ -127,7 +131,7 @@ public:
      */
     virtual uint64_t Tell() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return TellST();
         } else {
@@ -140,7 +144,7 @@ public:
      */
     virtual uint64_t Read(uint8_t* buffer, uint64_t size) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return ReadST(buffer, size);
         } else {
@@ -152,7 +156,7 @@ public:
      */
     virtual uint64_t Write(const uint8_t* buffer, uint64_t size) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return WriteST(buffer, size);
         } else {
@@ -163,9 +167,9 @@ public:
     /*
      * Read data from file to vector
      */
-    virtual uint64_t Read(std::vector<uint8_t>& buffer, uint64_t size) override
+    virtual uint64_t Read(eastl::vector<uint8_t>& buffer, uint64_t size) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return ReadST(buffer, size);
         } else {
@@ -176,9 +180,9 @@ public:
     /*
      * Write data from vector to file
      */
-    virtual uint64_t Write(const std::vector<uint8_t>& buffer) override
+    virtual uint64_t Write(const eastl::vector<uint8_t>& buffer) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return WriteST(buffer);
         } else {
@@ -191,7 +195,7 @@ public:
      */
     virtual uint64_t Read(std::ostream& stream, uint64_t size, uint64_t bufferSize = 1024) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return ReadST(stream, size, bufferSize);
         } else {
@@ -204,7 +208,7 @@ public:
      */
     virtual uint64_t Write(std::istream& stream, uint64_t size, uint64_t bufferSize = 1024) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return WriteST(stream, size, bufferSize);
         } else {
@@ -340,13 +344,13 @@ private:
         return static_cast<uint64_t>(m_Stream.gcount());
     }
 
-    inline uint64_t ReadST(std::vector<uint8_t>& buffer, uint64_t size)
+    inline uint64_t ReadST(eastl::vector<uint8_t>& buffer, uint64_t size)
     {
         buffer.resize(size);
         return ReadST(buffer.data(), size);
     }
     
-    inline uint64_t WriteST(const std::vector<uint8_t>& buffer)
+    inline uint64_t WriteST(const eastl::vector<uint8_t>& buffer)
     {
         return WriteST(buffer.data(), buffer.size());
     }

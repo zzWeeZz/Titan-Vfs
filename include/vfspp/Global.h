@@ -1,28 +1,29 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#include <functional>
-#include <vector>
-#include <map>
-#include <unordered_map>
-#include <set>
-#include <list>
-#include <string>
-#include <sstream>
-#include <algorithm>
 #include <mutex>
-#include <memory>
-#include <utility>
-#include <math.h>
-#include <assert.h>
+
+#include <EASTL/string.h>
+#include <EASTL/shared_ptr.h>
+#include <EASTL/weak_ptr.h>
+#include <EASTL/vector.h>
+#include <EASTL/list.h>
+
+#include <EASTL/algorithm.h>
+
+#include <EASTL/unordered_map.h>
+
 #include <fstream>
 #include <iostream>
 #include <filesystem>
 
-#ifdef VFSPP_ENABLE_MULTITHREADING
-#define VFSPP_MT_SUPPORT_ENABLED true
+namespace Titan::Vfs
+{
+#ifdef TITAN_VFS_MT_SUPPORT
+    constexpr bool g_MtSupportEnabled = true;
 #else
-#define VFSPP_MT_SUPPORT_ENABLED false
+    constexpr bool g_MtSupportEnabled = false;
 #endif
+}
 
 #endif // GLOBAL_H

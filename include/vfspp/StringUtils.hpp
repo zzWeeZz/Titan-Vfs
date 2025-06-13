@@ -3,13 +3,13 @@
 
 #include "Global.h"
 
-namespace vfspp
+namespace Titan::Vfs
 {
 
 class StringUtils
 {
 public:
-    static void Split(std::vector<std::string>& tokens, const std::string& text, char delimeter)
+    static void Split(eastl::vector<eastl::string>& tokens, const eastl::string& text, char delimeter)
     {
         size_t start = 0;
         size_t end = 0;
@@ -20,17 +20,17 @@ public:
         tokens.push_back(text.substr(start));
     }
 
-    static std::string Replace(std::string string, const std::string& from, const std::string& to)
+    static eastl::string Replace(eastl::string string, const eastl::string& from, const eastl::string& to)
     {
         size_t pos = 0;
-        while ((pos = string.find(from, pos)) != std::string::npos) {
+        while ((pos = string.find(from, pos)) != eastl::string::npos) {
             string.replace(pos, from.length(), to);
             pos += to.length();
         }
         return string;
     }
 
-    static bool EndsWith(std::string const& fullString, std::string const& ending)
+    static bool EndsWith(eastl::string const& fullString, eastl::string const& ending)
     {
         if (fullString.length() >= ending.length()) {
             return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
@@ -39,7 +39,7 @@ public:
         return false;
     }
 
-    static bool StartsWith(std::string const& fullString, std::string const& starting)
+    static bool StartsWith(eastl::string const& fullString, eastl::string const& starting)
     {
         if (fullString.length() >= starting.length()) {
             return (0 == fullString.compare(0, starting.length(), starting));

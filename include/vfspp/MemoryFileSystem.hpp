@@ -8,11 +8,11 @@
 
 namespace fs = std::filesystem;
 
-namespace vfspp
+namespace Titan::Vfs
 {
 
-using MemoryFileSystemPtr = std::shared_ptr<class MemoryFileSystem>;
-using MemoryFileSystemWeakPtr = std::weak_ptr<class MemoryFileSystem>;
+using MemoryFileSystemPtr = eastl::shared_ptr<class MemoryFileSystem>;
+using MemoryFileSystemWeakPtr = eastl::weak_ptr<class MemoryFileSystem>;
 
 
 class MemoryFileSystem final : public IFileSystem
@@ -33,10 +33,13 @@ public:
      */
     virtual void Initialize() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled)
+        {
             std::lock_guard<std::mutex> lock(m_Mutex);
             InitializeST();
-        } else {
+        }
+        else
+        {
             InitializeST();
         }
     }
@@ -46,10 +49,13 @@ public:
      */
     virtual void Shutdown() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled)
+        {
             std::lock_guard<std::mutex> lock(m_Mutex);
             ShutdownST();
-        } else {
+        }
+        else
+        {
             ShutdownST();
         }
     }
@@ -59,10 +65,13 @@ public:
      */
     virtual bool IsInitialized() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled)
+        {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsInitializedST();
-        } else {
+        }
+        else
+        {
             return IsInitializedST();
         }
     }
@@ -70,9 +79,9 @@ public:
     /*
      * Get base path
      */
-    virtual const std::string& BasePath() const override
+    virtual const eastl::string& BasePath() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return BasePathST();
         } else {
@@ -85,7 +94,7 @@ public:
      */
     virtual const TFileList& FileList() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return FileListST();
         } else {
@@ -98,7 +107,7 @@ public:
      */
     virtual bool IsReadOnly() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsReadOnlyST();
         } else {
@@ -112,7 +121,7 @@ public:
      */
     virtual IFilePtr OpenFile(const FileInfo& filePath, IFile::FileMode mode) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return OpenFileST(filePath, mode);
         } else {
@@ -125,7 +134,7 @@ public:
      */
     virtual void CloseFile(IFilePtr file) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             CloseFileST(file);
         } else {
@@ -138,7 +147,7 @@ public:
      */
     virtual bool CreateFile(const FileInfo& filePath) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return CreateFileST(filePath);
         } else {
@@ -151,7 +160,7 @@ public:
      */
     virtual bool RemoveFile(const FileInfo& filePath) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return RemoveFileST(filePath);
         } else {
@@ -164,7 +173,7 @@ public:
      */
     virtual bool CopyFile(const FileInfo& src, const FileInfo& dest) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return CopyFileST(src, dest);
         } else {
@@ -177,7 +186,7 @@ public:
      */
     virtual bool RenameFile(const FileInfo& srcPath, const FileInfo& dstPath) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return RenameFileST(srcPath, dstPath);
         } else {
@@ -190,7 +199,7 @@ public:
      */
     virtual bool IsFileExists(const FileInfo& filePath) const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsFileExistsST(filePath);
         } else {
@@ -203,7 +212,7 @@ public:
      */
     virtual bool IsFile(const FileInfo& filePath) const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IFileSystem::IsFile(filePath, m_FileList);
         } else {
@@ -216,7 +225,7 @@ public:
      */
     virtual bool IsDir(const FileInfo& dirPath) const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IFileSystem::IsDir(dirPath, m_FileList);
         } else {
@@ -248,9 +257,9 @@ private:
         return m_IsInitialized;
     }
 
-    inline const std::string& BasePathST() const
+    inline const eastl::string& BasePathST() const
     {
-        static std::string basePath = "/";
+        static eastl::string basePath = "/";
         return basePath;
     }
 
@@ -312,12 +321,13 @@ private:
 
     inline bool CopyFileST(const FileInfo& src, const FileInfo& dest)
     {
-        MemoryFilePtr srcFile = std::static_pointer_cast<MemoryFile>(FindFile(src, m_FileList));
-        MemoryFilePtr dstFile = std::static_pointer_cast<MemoryFile>(OpenFileST(dest, IFile::FileMode::Write | IFile::FileMode::Truncate));
+        MemoryFilePtr srcFile = eastl::static_pointer_cast<MemoryFile>(FindFile(src, m_FileList));
+        MemoryFilePtr dstFile = eastl::static_pointer_cast<MemoryFile>(OpenFileST(dest, IFile::FileMode::Write | IFile::FileMode::Truncate));
         
         if (srcFile && dstFile) {
             bool needClose = false;
-            if (!srcFile->IsOpened()) {
+            if (!srcFile->IsOpened())
+            {
                 needClose = true;
                 srcFile->Open(IFile::FileMode::Read);
             }

@@ -4,11 +4,11 @@
 #include "Global.h"
 #include "FileInfo.hpp"
 
-namespace vfspp
+namespace Titan::Vfs
 {
     
-using IFilePtr = std::shared_ptr<class IFile>;
-using IFileWeakPtr = std::weak_ptr<class IFile>;
+using IFilePtr = eastl::shared_ptr<class IFile>;
+using IFileWeakPtr = eastl::weak_ptr<class IFile>;
 
 class IFile
 {
@@ -35,7 +35,6 @@ public:
         Truncate = (1 << 3)
     };
     
-public:
     IFile() = default;
     virtual ~IFile() = default;
     
@@ -110,12 +109,12 @@ public:
     /*
      * Read data from file to vector
      */
-    virtual uint64_t Read(std::vector<uint8_t>& buffer, uint64_t size) = 0;
+    virtual uint64_t Read(eastl::vector<uint8_t>& buffer, uint64_t size) = 0;
     
     /*
      * Write data from vector to file
      */
-    virtual uint64_t Write(const std::vector<uint8_t>& buffer) = 0;
+    virtual uint64_t Write(const eastl::vector<uint8_t>& buffer) = 0;
 
     /*
      * Read data from file to stream

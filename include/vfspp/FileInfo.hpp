@@ -6,18 +6,18 @@
 
 namespace fs = std::filesystem;
 
-namespace vfspp
+namespace Titan::Vfs
 {
     
 class FileInfo final
 {
 public:
-    FileInfo(const std::string& filePath)
+    FileInfo(const eastl::string& filePath)
     {
         Configure("", filePath, false);
     }
 
-    FileInfo(const std::string& basePath, const std::string& fileName, bool isDir)
+    FileInfo(const eastl::string& basePath, const eastl::string& fileName, bool isDir)
     {
         Configure(basePath, fileName, isDir);
     }
@@ -38,33 +38,33 @@ public:
     /*
      * Get file name with extension
      */
-    inline std::string Name() const
+    inline eastl::string Name() const
     {
-        return m_Path.filename().string();
+        return m_Path.filename().string().c_str();
     }
     
     /*
      * Get file name without extension
      */
-    inline std::string BaseName() const
+    inline eastl::string BaseName() const
     {
-        return m_Path.stem().string();
+        return m_Path.stem().string().c_str();
     }
     
     /*
      * Get file extension
      */
-    inline std::string Extension() const
+    inline eastl::string Extension() const
     {
-        return m_Path.extension().string();
+        return m_Path.extension().string().c_str();
     }
     
     /*
      * Get absolute file path
      */
-    inline std::string AbsolutePath() const
+    inline eastl::string AbsolutePath() const
     {
-        return m_Path.string();
+        return m_Path.string().c_str();
     }
     
     /*
@@ -89,9 +89,9 @@ public:
     }
 
 private:
-    void Configure(const std::string& basePath, const std::string& fileName, bool isDir)
+    void Configure(const eastl::string& basePath, const eastl::string& fileName, bool isDir)
     {
-        m_Path = (fs::path(basePath) / fs::path(fileName)).generic_string();
+        m_Path = (fs::path(basePath.c_str()) / fs::path(fileName.c_str())).generic_string();
         m_IsDir = isDir;
     }
     

@@ -8,7 +8,7 @@
 
 namespace fs = std::filesystem;
 
-namespace vfspp
+namespace Titan::Vfs
 {
 
 using NativeFileSystemPtr = std::shared_ptr<class NativeFileSystem>;
@@ -17,7 +17,7 @@ using NativeFileSystemWeakPtr = std::weak_ptr<class NativeFileSystem>;
 class NativeFileSystem final : public IFileSystem
 {
 public:
-    NativeFileSystem(const std::string& basePath)
+    NativeFileSystem(const eastl::string& basePath)
         : m_BasePath(basePath)
         , m_IsInitialized(false)
     {
@@ -33,7 +33,7 @@ public:
      */
     virtual void Initialize() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             InitializeST();
         } else {
@@ -46,7 +46,7 @@ public:
      */
     virtual void Shutdown() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             ShutdownST();
         } else {
@@ -59,7 +59,7 @@ public:
      */
     virtual bool IsInitialized() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsInitializedST();
         } else {
@@ -70,9 +70,9 @@ public:
     /*
      * Get base path
      */
-    virtual const std::string& BasePath() const override
+    virtual const eastl::string& BasePath() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return BasePathST();
         } else {
@@ -85,7 +85,7 @@ public:
      */
     virtual const TFileList& FileList() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return FileListST();
         } else {
@@ -98,7 +98,7 @@ public:
      */
     virtual bool IsReadOnly() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsReadOnlyST();
         } else {
@@ -112,7 +112,7 @@ public:
      */
     virtual IFilePtr OpenFile(const FileInfo& filePath, IFile::FileMode mode) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return OpenFileST(filePath, mode);
         } else {
@@ -125,7 +125,7 @@ public:
      */
     virtual void CloseFile(IFilePtr file) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             CloseFileST(file);
         } else {
@@ -138,7 +138,7 @@ public:
      */
     virtual bool CreateFile(const FileInfo& filePath) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return CreateFileST(filePath);
         } else {
@@ -151,7 +151,7 @@ public:
      */
     virtual bool RemoveFile(const FileInfo& filePath) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return RemoveFileST(filePath);
         } else {
@@ -164,7 +164,7 @@ public:
      */
     virtual bool CopyFile(const FileInfo& src, const FileInfo& dest) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return CopyFileST(src, dest);
         } else {
@@ -177,7 +177,7 @@ public:
      */
     virtual bool RenameFile(const FileInfo& srcPath, const FileInfo& dstPath) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return RenameFileST(srcPath, dstPath);
         } else {
@@ -190,7 +190,7 @@ public:
      */
     virtual bool IsFileExists(const FileInfo& filePath) const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsFileExistsST(filePath);
         } else {
@@ -203,7 +203,7 @@ public:
      */
     virtual bool IsFile(const FileInfo& filePath) const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IFileSystem::IsFile(filePath, m_FileList);
         } else {
@@ -216,7 +216,7 @@ public:
      */
     virtual bool IsDir(const FileInfo& dirPath) const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IFileSystem::IsDir(dirPath, m_FileList);
         } else {
@@ -231,7 +231,7 @@ private:
             return;
         }
 
-        if (!fs::exists(m_BasePath) || !fs::is_directory(m_BasePath)) {
+        if (!fs::exists(m_BasePath.c_str()) || !fs::is_directory(m_BasePath.c_str())) {
             return;
         }
 
@@ -255,7 +255,7 @@ private:
         return m_IsInitialized;
     }
     
-    inline const std::string& BasePathST() const
+    inline const eastl::string& BasePathST() const
     {
         return m_BasePath;
     }
@@ -271,7 +271,7 @@ private:
             return true;
         }
         
-        auto perms = fs::status(m_BasePath).permissions();
+        auto perms = fs::status(m_BasePath.c_str()).permissions();
         return (perms & fs::perms::owner_write) == fs::perms::none;
     }
     
@@ -329,7 +329,7 @@ private:
         }
         
         m_FileList.erase(filePath.AbsolutePath());
-        return fs::remove(filePath.AbsolutePath());
+        return fs::remove(filePath.AbsolutePath().c_str());
     }
     
     inline bool CopyFileST(const FileInfo& src, const FileInfo& dest)
@@ -342,7 +342,7 @@ private:
             return false;
         }
         
-        return fs::copy_file(src.AbsolutePath(), dest.AbsolutePath());
+        return fs::copy_file(src.AbsolutePath().c_str(), dest.AbsolutePath().c_str());
     }
     
     bool RenameFileST(const FileInfo& srcPath, const FileInfo& dstPath)
@@ -355,7 +355,7 @@ private:
             return false;
         }
         
-        fs::rename(srcPath.AbsolutePath(), dstPath.AbsolutePath());
+        fs::rename(srcPath.AbsolutePath().c_str(), dstPath.AbsolutePath().c_str());
         return true;
     }
 
@@ -364,14 +364,14 @@ private:
         return FindFile(filePath, m_FileList) != nullptr;
     }
 
-    void BuildFilelist(std::string basePath, TFileList& outFileList)
+    void BuildFilelist(eastl::string basePath, TFileList& outFileList)
     {
-        for (const auto& entry : fs::directory_iterator(basePath)) {
+        for (const auto& entry : fs::directory_iterator(basePath.c_str())) {
             auto filename = entry.path().filename().string();
             if (fs::is_directory(entry.status())) {
-                BuildFilelist(entry.path().string(), outFileList);
+                BuildFilelist(entry.path().string().c_str(), outFileList);
             } else if (fs::is_regular_file(entry.status())) {
-                FileInfo fileInfo(basePath, filename, false);
+                FileInfo fileInfo(basePath, filename.c_str(), false);
                 IFilePtr file(new NativeFile(fileInfo));
                 outFileList[fileInfo.AbsolutePath()] = file;
             }
@@ -379,7 +379,7 @@ private:
     }
     
 private:
-    std::string m_BasePath;
+    eastl::string m_BasePath;
     bool m_IsInitialized;
     TFileList m_FileList;
     mutable std::mutex m_Mutex;

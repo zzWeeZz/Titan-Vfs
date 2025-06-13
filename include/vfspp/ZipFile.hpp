@@ -4,17 +4,17 @@
 #include "IFile.h"
 #include "zip_file.hpp"
 
-namespace vfspp
+namespace Titan::Vfs
 {
 
-using ZipFilePtr = std::shared_ptr<class ZipFile>;
-using ZipFileWeakPtr = std::weak_ptr<class ZipFile>;
+using ZipFilePtr = eastl::shared_ptr<class ZipFile>;
+using ZipFileWeakPtr = eastl::weak_ptr<class ZipFile>;
 
 
 class ZipFile final : public IFile
 {
 public:
-    ZipFile(const FileInfo& fileInfo, uint32_t entryID, uint64_t size, std::weak_ptr<mz_zip_archive> zipArchive)
+    ZipFile(const FileInfo& fileInfo, uint32_t entryID, uint64_t size, eastl::weak_ptr<mz_zip_archive> zipArchive)
         : m_FileInfo(fileInfo)
         , m_EntryID(entryID)
         , m_Size(size)
@@ -34,7 +34,7 @@ public:
      */
     virtual const FileInfo& GetFileInfo() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return GetFileInfoST();
         } else {
@@ -47,7 +47,7 @@ public:
      */
     virtual uint64_t Size() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return SizeST();
         } else {
@@ -60,7 +60,7 @@ public:
      */
     virtual bool IsReadOnly() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsReadOnlyST();
         } else {
@@ -73,7 +73,7 @@ public:
      */
     virtual void Open(FileMode mode) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             OpenST(mode);
         } else {
@@ -86,7 +86,7 @@ public:
      */
     virtual void Close() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             CloseST();
         } else {
@@ -99,7 +99,7 @@ public:
      */
     virtual bool IsOpened() const override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return IsOpenedST();
         } else {
@@ -112,7 +112,7 @@ public:
      */
     virtual uint64_t Seek(uint64_t offset, Origin origin) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return SeekST(offset, origin);
         } else {
@@ -124,7 +124,7 @@ public:
      */
     virtual uint64_t Tell() override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return TellST();
         } else {
@@ -137,7 +137,7 @@ public:
      */
     virtual uint64_t Read(uint8_t* buffer, uint64_t size) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return ReadST(buffer, size);
         } else {
@@ -149,7 +149,7 @@ public:
      */
     virtual uint64_t Write(const uint8_t* buffer, uint64_t size) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return WriteST(buffer, size);
         } else {
@@ -160,9 +160,9 @@ public:
     /*
      * Read data from file to vector
      */
-    virtual uint64_t Read(std::vector<uint8_t>& buffer, uint64_t size) override
+    virtual uint64_t Read(eastl::vector<uint8_t>& buffer, uint64_t size) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return ReadST(buffer, size);
         } else {
@@ -173,9 +173,9 @@ public:
     /*
      * Write data from vector to file
      */
-    virtual uint64_t Write(const std::vector<uint8_t>& buffer) override
+    virtual uint64_t Write(const eastl::vector<uint8_t>& buffer) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return WriteST(buffer);
         } else {
@@ -188,7 +188,7 @@ public:
      */
     virtual uint64_t Read(std::ostream& stream, uint64_t size, uint64_t bufferSize = 1024) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return ReadST(stream, size, bufferSize);
         } else {
@@ -201,7 +201,7 @@ public:
      */
     virtual uint64_t Write(std::istream& stream, uint64_t size, uint64_t bufferSize = 1024) override
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return WriteST(stream, size, bufferSize);
         } else {
@@ -244,7 +244,7 @@ private:
             return;
         }
 
-        std::shared_ptr<mz_zip_archive> zipArchive = m_ZipArchive.lock();
+        eastl::shared_ptr<mz_zip_archive> zipArchive = m_ZipArchive.lock();
         if (!zipArchive) {
             return;
         }
@@ -281,7 +281,7 @@ private:
         } else if (origin == IFile::Origin::Set) {
             m_SeekPos += offset;
         }
-        m_SeekPos = std::min(m_SeekPos, SizeST() - 1);
+        m_SeekPos = eastl::min(m_SeekPos, SizeST() - 1);
 
         return TellST();
     }
@@ -298,7 +298,7 @@ private:
         }
         
         uint64_t leftSize = SizeST() - TellST();
-        uint64_t maxSize = std::min(size, leftSize);
+        uint64_t maxSize = eastl::min(size, leftSize);
         if (maxSize > 0) {
             memcpy(buffer, m_Data.data(), static_cast<size_t>(maxSize));
             return maxSize;
@@ -312,13 +312,13 @@ private:
         return 0;
     }
 
-    inline uint64_t ReadST(std::vector<uint8_t>& buffer, uint64_t size)
+    inline uint64_t ReadST(eastl::vector<uint8_t>& buffer, uint64_t size)
     {
         buffer.resize(size);
         return ReadST(buffer.data(), size);
     }
     
-    inline uint64_t WriteST(const std::vector<uint8_t>& buffer)
+    inline uint64_t WriteST(const eastl::vector<uint8_t>& buffer)
     {
         return WriteST(buffer.data(), buffer.size());
     }
@@ -327,9 +327,9 @@ private:
     {
         // read chunk of data from file and write it to stream untill all data is read
         uint64_t totalSize = size;
-        std::vector<uint8_t> buffer(bufferSize);
+        eastl::vector<uint8_t> buffer(bufferSize);
         while (size > 0) {
-            uint64_t bytesRead = ReadST(buffer.data(), std::min(size, static_cast<uint64_t>(buffer.size())));
+            uint64_t bytesRead = ReadST(buffer.data(), eastl::min(size, static_cast<uint64_t>(buffer.size())));
 			if (bytesRead == 0) {
 				break;
 			}
@@ -350,9 +350,9 @@ private:
     {
         // write chunk of data from stream to file untill all data is written
         uint64_t totalSize = size;
-        std::vector<uint8_t> buffer(bufferSize);
+        eastl::vector<uint8_t> buffer(bufferSize);
         while (size > 0) {
-			stream.read(reinterpret_cast<char*>(buffer.data()), std::min(size, static_cast<uint64_t>(buffer.size())));
+			stream.read(reinterpret_cast<char*>(buffer.data()), eastl::min(size, static_cast<uint64_t>(buffer.size())));
 			uint64_t bytesRead = stream.gcount();
 			if (bytesRead == 0) {
 				break;
@@ -374,8 +374,8 @@ private:
     FileInfo m_FileInfo;
     uint32_t m_EntryID;
     uint64_t m_Size;
-    std::weak_ptr<mz_zip_archive> m_ZipArchive;
-    std::vector<uint8_t> m_Data;
+    eastl::weak_ptr<mz_zip_archive> m_ZipArchive;
+    eastl::vector<uint8_t> m_Data;
     bool m_IsOpened;
     uint64_t m_SeekPos;
     mutable std::mutex m_Mutex;

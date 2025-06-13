@@ -3,8 +3,9 @@
 
 #include "IFileSystem.h"
 #include "IFile.h"
+#include "EASTL/sort.h"
 
-namespace vfspp
+namespace Titan::Vfs
 {
 
 using VirtualFileSystemPtr = std::shared_ptr<class VirtualFileSystem>;
@@ -14,8 +15,8 @@ using VirtualFileSystemWeakPtr = std::weak_ptr<class VirtualFileSystem>;
 class VirtualFileSystem final
 {
 public:
-    typedef std::list<IFileSystemPtr> TFileSystemList;
-    typedef std::unordered_map<std::string, TFileSystemList> TFileSystemMap;
+    typedef eastl::list<IFileSystemPtr> TFileSystemList;
+    typedef eastl::unordered_map<eastl::string, TFileSystemList> TFileSystemMap;
     
 public:
     VirtualFileSystem()
@@ -37,7 +38,7 @@ public:
      * with alias '/', so it possible to access files with path '/filename'
      * instead of '/home/media/filename
      */
-    void AddFileSystem(std::string alias, IFileSystemPtr filesystem)
+    void AddFileSystem(eastl::string alias, IFileSystemPtr filesystem)
     {
         if (!filesystem) {
             return;
@@ -47,17 +48,17 @@ public:
             alias += "/";
         }
         
-        std::function<void()> fn = [&]() {
+        eastl::function<void()> fn = [&]() {
             m_FileSystems[alias].push_back(filesystem);
-            if (std::find(m_SortedAlias.begin(), m_SortedAlias.end(), alias) == m_SortedAlias.end()) {
+            if (eastl::find(m_SortedAlias.begin(), m_SortedAlias.end(), alias) == m_SortedAlias.end()) {
                 m_SortedAlias.push_back(alias);
             }
-            std::sort(m_SortedAlias.begin(), m_SortedAlias.end(), [](const std::string& a1, const std::string& a2) {
+            eastl::sort(m_SortedAlias.begin(), m_SortedAlias.end(), [](const eastl::string& a1, const eastl::string& a2) {
                 return a1.length() > a2.length();
             });
         };
         
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             fn();
         } else {
@@ -68,13 +69,13 @@ public:
     /*
      * Remove registered filesystem
      */
-    void RemoveFileSystem(std::string alias, IFileSystemPtr filesystem)
+    void RemoveFileSystem(eastl::string alias, IFileSystemPtr filesystem)
     {
         if (!StringUtils::EndsWith(alias, "/")) {
             alias += "/";
         }
 
-        std::function<void()> fn = [&]() {
+        eastl::function<void()> fn = [&]() {
             auto it = m_FileSystems.find(alias);
             if (it != m_FileSystems.end()) {
                 it->second.remove(filesystem);
@@ -85,7 +86,7 @@ public:
             }
         };
 
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             fn();
         } else {
@@ -96,13 +97,13 @@ public:
     /*
      * Check if filesystem with 'alias' added
      */
-    bool HasFileSystem(std::string alias, IFileSystemPtr fileSystem) const
+    bool HasFileSystem(eastl::string alias, IFileSystemPtr fileSystem) const
     {
         if (!StringUtils::EndsWith(alias, "/")) {
             alias += "/";
         }
 
-        std::function<bool()> fn = [&]() -> bool {
+        eastl::function<bool()> fn = [&]() -> bool {
             auto it = m_FileSystems.find(alias);
             if (it != m_FileSystems.end()) {
                 return (std::find(it->second.begin(), it->second.end(), fileSystem) != it->second.end());
@@ -110,7 +111,7 @@ public:
             return false;
         };
 
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return fn();
         } else {
@@ -121,18 +122,18 @@ public:
     /*
      * Unregister all filesystems with 'alias'
      */
-    void UnregisterAlias(std::string alias)
+    void UnregisterAlias(eastl::string alias)
     {
         if (!StringUtils::EndsWith(alias, "/")) {
             alias += "/";
         }
 
-        std::function<void()> fn = [&]() {
+        eastl::function<void()> fn = [&]() {
             m_FileSystems.erase(alias);
-            m_SortedAlias.erase(std::remove(m_SortedAlias.begin(), m_SortedAlias.end(), alias), m_SortedAlias.end());
+            m_SortedAlias.erase(eastl::remove(m_SortedAlias.begin(), m_SortedAlias.end(), alias), m_SortedAlias.end());
         };
 
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             fn();
         } else {
@@ -143,13 +144,13 @@ public:
     /*
      * Check if there any filesystem with 'alias' registered
      */
-    bool IsAliasRegistered(std::string alias) const
+    bool IsAliasRegistered(eastl::string alias) const
     {
         if (!StringUtils::EndsWith(alias, "/")) {
             alias += "/";
         }
 
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return (m_FileSystems.find(alias) != m_FileSystems.end());
         } else {
@@ -160,9 +161,9 @@ public:
     /*
      * Get all added filesystems with 'alias'
      */
-    const TFileSystemList& GetFilesystems(std::string alias)
+    const TFileSystemList& GetFilesystems(eastl::string alias)
     {
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return GetFilesystemsST(alias);
         } else {
@@ -175,14 +176,14 @@ public:
      */
     IFilePtr OpenFile(const FileInfo& filePath, IFile::FileMode mode)
     {
-        std::function<IFilePtr()> fn = [&]() -> IFilePtr {
-            for (const std::string& alias : m_SortedAlias) {
+        eastl::function<IFilePtr()> fn = [&]() -> IFilePtr {
+            for (const eastl::string& alias : m_SortedAlias) {
                 if (!StringUtils::StartsWith(filePath.AbsolutePath(), alias)) {
                     continue;
                 }
 
                 // Strip alias from file path
-                std::string relativePath = filePath.AbsolutePath().substr(alias.length());
+                eastl::string relativePath = filePath.AbsolutePath().substr(alias.length());
                 
                 // Enumerate reverse to get filesystems in order of registration
                 const TFileSystemList& filesystems = GetFilesystemsST(alias);
@@ -210,7 +211,7 @@ public:
             return nullptr;
         };
 
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return fn();
         } else {
@@ -218,17 +219,17 @@ public:
         }
     }
 
-    std::string AbsolutePath(std::string_view relativePath)
+    eastl::string AbsolutePath(eastl::string_view relativePath)
     {
-        std::function<std::string()> fn = [&]() -> std::string {
-            std::string strRelativePath = std::string(relativePath);
-            for (const std::string& alias : m_SortedAlias) {
+        eastl::function<eastl::string()> fn = [&]() -> eastl::string {
+            eastl::string strRelativePath = eastl::string(relativePath);
+            for (const eastl::string& alias : m_SortedAlias) {
                 if (!StringUtils::StartsWith(strRelativePath, alias)) {
                     continue;
                 }
 
                 // Strip alias from file path
-                std::string strippedRelativePath = strRelativePath.substr(alias.length());
+                eastl::string strippedRelativePath = strRelativePath.substr(alias.length());
 
                 // Enumerate reverse to get filesystems in order of registration
                 const TFileSystemList& filesystems = GetFilesystemsST(alias);
@@ -253,7 +254,7 @@ public:
             return "";
             };
 
-        if constexpr (VFSPP_MT_SUPPORT_ENABLED) {
+        if constexpr (g_MtSupportEnabled) {
             std::lock_guard<std::mutex> lock(m_Mutex);
             return fn();
         }
@@ -263,7 +264,7 @@ public:
     }
 
 private:
-    inline const TFileSystemList& GetFilesystemsST(std::string alias)
+    inline const TFileSystemList& GetFilesystemsST(eastl::string alias)
     {
         if (!StringUtils::EndsWith(alias, "/")) {
             alias += "/";
@@ -281,7 +282,7 @@ private:
     
 private:
     TFileSystemMap m_FileSystems;
-    std::vector<std::string> m_SortedAlias;
+    eastl::vector<eastl::string> m_SortedAlias;
     mutable std::mutex m_Mutex;
 };
     
